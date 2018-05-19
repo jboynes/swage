@@ -96,10 +96,9 @@ public abstract class MetricRecorder {
      * a recorder requires in a context and the context that provides it.
      * Convenience functions are provided to call methods on the recorder with
      * this context.
-     *
-     * TODO: provide a childContext() mechanism?
      */
     public final class Context implements Closeable {
+
         private final TypedMap data;
 
         private Context(final TypedMap data) {
@@ -164,6 +163,33 @@ public abstract class MetricRecorder {
          */
         public final void count(Metric label, long delta) {
             MetricRecorder.this.count(label, delta, data);
+        }
+
+        /**
+         * Create a child Context identified by the supplied data.
+         *
+         * This Context will be added to the child's metadata under the {@link ContextData#PARENT}
+         * key.
+         *
+         * @param data An object to be used for identifying the Context.
+         * @return a child context wrapping the provided data.
+         */
+        public Context child(TypedMap data) {
+            TypedMap dataWithParent = ContextData.from(data).add(ContextData.PARENT, this).build();
+            return MetricRecorder.this.context(dataWithParent);
+        }
+
+        /**
+         * Create a child context with the supplied identifier.
+         *
+         * The parent key will be set to this Context.
+         *
+         * @param id an identifier that will be stored in the {@link ContextData#ID} key
+         * @return a child context with supplied id and this Context as its parent
+         */
+        public Context childWithId(String id) {
+            TypedMap data = ContextData.withId(id).add(ContextData.PARENT, this).build();
+            return MetricRecorder.this.context(data);
         }
 
         /**
@@ -272,7 +298,5 @@ public abstract class MetricRecorder {
      * @param context Identifying data for the context being closed.
      */
     protected void close(TypedMap context) {
-        return;
     }
-
 }

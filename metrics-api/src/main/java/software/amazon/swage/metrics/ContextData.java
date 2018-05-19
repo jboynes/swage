@@ -79,6 +79,11 @@ public class DomainSpecificData extends ContextData {
  * TODO: explore auto-generating builders based on keys, perhaps with Immutables lib
  */
 public class ContextData extends ImmutableTypedMap.Builder {
+    /**
+     * Key for a Context entry referring to the parent Context.
+     */
+    public static final TypedMap.Key<MetricRecorder.Context> PARENT =
+            TypedMap.key("parent", MetricRecorder.Context.class);
 
     /**
      * Key for ID of the context.  Use like

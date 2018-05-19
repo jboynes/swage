@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -95,7 +96,7 @@ public class MetricRecorderTest {
         assertEquals("Wrong metric", M_TIME, e1.metric);
         assertEquals("Wrong value", time, e1.value);
         assertEquals("Wrong unit", Unit.MILLISECOND, e1.unit);
-        assertTrue("Wrong timestamp", e1.timestamp.equals(timestamp));
+        assertTrue("Wrong timestamp", timestamp.equals(e1.timestamp));
         assertEquals("Wrong benchmark", metadata, e1.metadata);
         assertEquals("Wrong REQUEST_ID", id.toString(), e1.metadata.get(ContextData.ID));
 
@@ -107,7 +108,7 @@ public class MetricRecorderTest {
         assertEquals("Wrong metric", M_PERC, e2.metric);
         assertEquals("Wrong value", load, e2.value);
         assertEquals("Wrong unit", Unit.PERCENT, e2.unit);
-        assertTrue("Wrong timestamp", e2.timestamp.equals(timestamp));
+        assertTrue("Wrong timestamp", timestamp.equals(e2.timestamp));
         assertEquals("Wrong benchmark", metadata, e2.metadata);
         assertEquals("Wrong REQUEST_ID", id.toString(), e2.metadata.get(ContextData.ID));
     }
@@ -168,6 +169,37 @@ public class MetricRecorderTest {
         assertEquals("Wrong value", 11L, e2.value);
         assertEquals("Wrong benchmark", metadata, e2.metadata);
         assertEquals("Wrong REQUEST_ID", id.toString(), e2.metadata.get(ContextData.ID));
+    }
+
+    @Test
+    public void childContextReferencesParent() {
+        List<Event> output = new ArrayList<>();
+        MetricRecorder mr = testRecorder(output);
+
+        TypedMap parentData = makeContext("parent");
+        MetricRecorder.Context parent = mr.context(parentData);
+
+        TypedMap childData = makeContext("child");
+        parent.child(childData).count(M_FAIL, 1);
+        Event event = output.get(0);
+        assertEquals(M_FAIL, event.metric);
+        assertEquals(1L, event.value);
+        assertEquals("child", event.metadata.get(ContextData.ID));
+        assertSame(parent, event.metadata.get(ContextData.PARENT));
+    }
+
+    @Test
+    public void childContextHasId() {
+        List<Event> output = new ArrayList<>();
+        MetricRecorder mr = testRecorder(output);
+
+        TypedMap parentData = makeContext("parent");
+        MetricRecorder.Context parent = mr.context(parentData);
+
+        parent.childWithId("child").count(M_FAIL, 1);
+        Event event = output.get(0);
+        assertEquals("child", event.metadata.get(ContextData.ID));
+        assertSame(parent, event.metadata.get(ContextData.PARENT));
     }
 
     @Test
